@@ -4,7 +4,7 @@ version = "0.8.0"
 edition = "2021"
 
 [dependencies]
-chrono = "0.4.19"
+chrono = { version = "0.4.19", default-features = false }
 erased-serde = "0.3.11"
 hyper = "0.14.18"
 serde = { version = "1.0.115", features = ["derive"] }

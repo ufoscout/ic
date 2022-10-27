@@ -7,7 +7,7 @@ edition = "2021"
 anyhow = "1.0"
 base64 = "0.11"
 clap = { version = "3.1.6", features = ["derive"] }
-chrono = "0.4.19"
+chrono = { version = "0.4.19", default-features = false }
 fs_extra = "1.2.0"
 ic-crypto = { path = "../crypto" }
 ic-crypto-node-key-generation = { path = "../crypto/node_key_generation" }

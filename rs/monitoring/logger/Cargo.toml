@@ -4,7 +4,7 @@ version = "0.8.0"
 edition = "2021"
 
 [dependencies]
-chrono = "0.4.19"
+chrono = { version = "0.4.19", default-features = false }
 ic-config = { path = "../../config" }
 ic-context-logger = { path = "../context_logger" }
 ic-protobuf = { path = "../../protobuf" }

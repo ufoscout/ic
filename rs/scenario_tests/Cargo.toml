@@ -7,7 +7,7 @@ autotests = false
 [dependencies]
 candid = "0.8.1"
 canister-test = { path = "../rust_canisters/canister_test" }
-chrono = "0.4.19"
+chrono = { version = "0.4.19", default-features = false }
 clap = { version = "3.1.6", features = ["derive"] }
 colored = "2.0.0"
 crossbeam-channel = "0.5.5"

@@ -38,7 +38,7 @@ thiserror = "1.0"
 url = { version = "2", features = ["serde"] }
 
 [target.'cfg(not(all(target_arch = "wasm32", target_os = "unknown")))'.dependencies]
-chrono = "0.4"
+chrono = { version = "0.4.19", default-features = false }
 
 [dev-dependencies]
 anyhow = "1"

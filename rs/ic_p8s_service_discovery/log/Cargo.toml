@@ -4,7 +4,7 @@ version = "0.8.0"
 edition = "2021"
 
 [dependencies]
-chrono = "0.4.19"
+chrono = { version = "0.4.19", default-features = false }
 elastic_common_schema = { path = "../../elastic_common_schema" }
 gflags = "0.3.7"
 gflags-derive = "0.1"

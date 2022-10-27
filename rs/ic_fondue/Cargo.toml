@@ -8,7 +8,7 @@ edition = "2021"
 anyhow = "1.0"
 bincode = "1.2.1"
 canister-test = { path = "../rust_canisters/canister_test" }
-chrono = "0.4.19"
+chrono = { version = "0.4.19", default-features = false }
 crossbeam-channel = "0.5.5"
 either = "1.6"
 flate2 = "1.0.22"

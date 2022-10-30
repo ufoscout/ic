@@ -2,14 +2,14 @@
 A macro to build multiple versions of the ICOS image (i.e., dev vs prod)
 """
 
-load("//toolchains/sysimage:toolchain.bzl", "disk_image", "docker_tar", "ext4_image", "sha256sum", "summary_sha256sum", "tar_extract", "upgrade_image")
+load("//toolchains/sysimage:toolchain.bzl", "disk_image", "docker_tar", "ext4_image", "sha256sum", "tar_extract", "upgrade_image")
 load("//gitlab-ci/src/artifacts:upload.bzl", "upload_artifacts", "urls_test")
 load("//bazel:output_files.bzl", "output_files")
 load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 
 img_bases = {
-    "dev": "dfinity/guestos-base-dev@sha256:c54c12d710d748d776e88bedf8e9c4eb3c391cfcdbd81df3c1ed40b86358314d",
-    "prod": "dfinity/guestos-base@sha256:65b977ea21e1aedf1af1153610457a192e5edfc2768e6ea5926818246e894ccf",
+    "dev": "dfinity/guestos-base-dev@sha256:48f83b96fe53d82d028750593f21321984c19a40efeaada463d57609c592aef8",
+    "prod": "dfinity/guestos-base@sha256:104fad74a45cd19419aa8abf15fc509d0bebfb971230a9810ddcd6e84b3bd856",
 }
 
 # Declare the dependencies that we will have for the built filesystem images.
@@ -116,10 +116,18 @@ def icos_build(name, mode = None, malicious = False, visibility = None):
         ],
     )
 
-    summary_sha256sum(
-        name = "version.txt",
-        inputs = image_deps,
-        suffix = "-dev" if mode == "dev" else "",
+    # TODO(IDX-2538): re-enable this (or any other similar) solution when everything will be ready to have ic version that is not git revision.
+    #summary_sha256sum(
+    #    name = "version.txt",
+    #    inputs = image_deps,
+    #    suffix = "-dev" if mode == "dev" else "",
+    #)
+
+    copy_file(
+        name = "copy_version_txt",
+        src = "//bazel:version.txt",
+        out = "version.txt",
+        allow_symlink = True,
     )
 
     copy_file(

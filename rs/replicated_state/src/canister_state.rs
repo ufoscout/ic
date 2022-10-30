@@ -239,6 +239,7 @@ impl CanisterState {
             (None, false) => NextExecution::None,
             (None, true) => NextExecution::StartNew,
             (Some(ExecutionTask::Heartbeat), _) => NextExecution::StartNew,
+            (Some(ExecutionTask::GlobalTimer), _) => NextExecution::StartNew,
             (Some(ExecutionTask::AbortedExecution { .. }), _)
             | (Some(ExecutionTask::PausedExecution(..)), _) => NextExecution::ContinueLong,
             (Some(ExecutionTask::AbortedInstallCode { .. }), _)
@@ -257,6 +258,7 @@ impl CanisterState {
             Some(ExecutionTask::AbortedExecution { .. }) => true,
             None
             | Some(ExecutionTask::Heartbeat)
+            | Some(ExecutionTask::GlobalTimer)
             | Some(ExecutionTask::PausedExecution(..))
             | Some(ExecutionTask::PausedInstallCode(..))
             | Some(ExecutionTask::AbortedInstallCode { .. }) => false,
@@ -269,6 +271,7 @@ impl CanisterState {
             Some(ExecutionTask::PausedExecution(..)) => true,
             None
             | Some(ExecutionTask::Heartbeat)
+            | Some(ExecutionTask::GlobalTimer)
             | Some(ExecutionTask::PausedInstallCode(..))
             | Some(ExecutionTask::AbortedExecution { .. })
             | Some(ExecutionTask::AbortedInstallCode { .. }) => false,
@@ -281,6 +284,7 @@ impl CanisterState {
             Some(ExecutionTask::PausedInstallCode(..)) => true,
             None
             | Some(ExecutionTask::Heartbeat)
+            | Some(ExecutionTask::GlobalTimer)
             | Some(ExecutionTask::PausedExecution(..))
             | Some(ExecutionTask::AbortedExecution { .. })
             | Some(ExecutionTask::AbortedInstallCode { .. }) => false,
@@ -293,6 +297,7 @@ impl CanisterState {
             Some(ExecutionTask::AbortedInstallCode { .. }) => true,
             None
             | Some(ExecutionTask::Heartbeat)
+            | Some(ExecutionTask::GlobalTimer)
             | Some(ExecutionTask::PausedExecution(..))
             | Some(ExecutionTask::PausedInstallCode(..))
             | Some(ExecutionTask::AbortedExecution { .. }) => false,
@@ -404,7 +409,17 @@ impl CanisterState {
             .unwrap_or(0);
         let num_responses = self.system_state.queues().input_queues_response_count();
         let num_reservations = self.system_state.queues().input_queues_reservation_count();
-        if num_callbacks != num_reservations + num_responses {
+        let is_callback_invariant_broken = if num_callbacks == num_reservations + num_responses {
+            false
+        } else if !self.has_paused_execution() && !self.has_aborted_execution() {
+            true
+        } else {
+            // With a pending DTS execution, the response callback is accounted
+            // in `num_callbacks` until the execution finishes. Note that there
+            // can be at most one pending DTS execution per canister.
+            num_callbacks - 1 != num_reservations + num_responses
+        };
+        if is_callback_invariant_broken {
             return Err(StateError::InvariantBroken(format!(
                 "Canister {}: Number of callbacks ({}) is different than the accumulated number of reservations and responses ({})",
                 self.canister_id(),

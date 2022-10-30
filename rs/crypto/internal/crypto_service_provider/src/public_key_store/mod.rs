@@ -1,12 +1,11 @@
 //! Interfaces for saving and retrieving public keys
+use ic_protobuf::crypto::v1::NodePublicKeys;
+use ic_protobuf::registry::crypto::v1::{PublicKey as PublicKeyProto, X509PublicKeyCert};
 use prost::Message;
 use std::fs;
 use std::path::Path;
 
-use ic_protobuf::crypto::v1::NodePublicKeys;
-
 const PK_DATA_FILENAME: &str = "public_keys.pb";
-const PUBLIC_FOLDER: &str = "public";
 
 /// Error while reading or writing public keys
 #[derive(Clone, Debug)]
@@ -29,18 +28,76 @@ pub fn store_node_public_keys(
 
 /// Read the node public keys from local storage
 pub fn read_node_public_keys(crypto_root: &Path) -> Result<NodePublicKeys, PublicKeyStoreError> {
-    let legacy_pk_file = crypto_root.join(PK_DATA_FILENAME);
-    let pk_folder = crypto_root.join(PUBLIC_FOLDER);
-    let pk_file = pk_folder.join(PK_DATA_FILENAME);
-
-    let src_file = if pk_file.exists() {
-        pk_file
-    } else {
-        legacy_pk_file
-    };
-    match fs::read(src_file) {
+    let pk_file = crypto_root.join(PK_DATA_FILENAME);
+    match fs::read(pk_file) {
         Ok(data) => NodePublicKeys::decode(&*data)
             .map_err(|err| PublicKeyStoreError::ParsingError(err.to_string())),
         Err(err) => Err(PublicKeyStoreError::IOError(err.to_string())),
     }
+}
+
+pub enum PublicKeySetOnceError {
+    AlreadySet,
+    Io(std::io::Error),
+}
+
+/// A store for public key material persisted on disk.
+///
+/// If errors occur regarding reading from or writing to disk,
+/// the methods generally return an error rather than panic.
+pub trait PublicKeyStore {
+    /// Sets the node signing public key.
+    ///
+    /// Returns an error if a key is already set, or if writing to disk fails.
+    fn set_once_node_signing_pubkey(
+        &mut self,
+        key: PublicKeyProto,
+    ) -> Result<(), PublicKeySetOnceError>;
+
+    /// Gets the node signing public key.
+    fn node_signing_pubkey(&self) -> Option<&PublicKeyProto>;
+
+    /// Sets the committee signing public key.
+    ///
+    /// Returns an error if a key is already set, or if writing to disk fails.
+    fn set_once_committee_signing_pubkey(
+        &mut self,
+        key: PublicKeyProto,
+    ) -> Result<(), PublicKeySetOnceError>;
+
+    /// Gets the committee signing public key.
+    fn committee_signing_pubkey(&self) -> Option<&PublicKeyProto>;
+
+    /// Sets the NI-DKG dealing encryption public key.
+    ///
+    /// Returns an error if a key is already set, or if writing to disk fails.
+    fn set_once_ni_dkg_dealing_encryption_pubkey(
+        &mut self,
+        key: PublicKeyProto,
+    ) -> Result<(), PublicKeySetOnceError>;
+
+    /// Gets the NI-DKG dealing encryption public key.
+    fn ni_dkg_dealing_encryption_pubkey(&self) -> Option<&PublicKeyProto>;
+
+    /// Sets the TLS certificate.
+    ///
+    /// Returns an error if a certificate is already set, or if writing to disk fails.
+    fn set_once_tls_certificate(
+        &mut self,
+        cert: X509PublicKeyCert,
+    ) -> Result<(), PublicKeySetOnceError>;
+
+    /// Gets the TLS certificate.
+    fn tls_certificate(&self) -> Option<&X509PublicKeyCert>;
+
+    /// Sets the iDKG dealing encryption public keys.
+    fn set_idkg_dealing_encryption_pubkeys(
+        &mut self,
+        keys: Vec<PublicKeyProto>,
+    ) -> Result<(), std::io::Error>;
+
+    /// Gets the iDKG dealing encryption public keys.
+    ///
+    /// The ordering of the keys is guaranteed to be same as when the keys were set.
+    fn idkg_dealing_encryption_pubkeys(&self) -> &Vec<PublicKeyProto>;
 }

@@ -2,7 +2,7 @@
 #
 # Build step for exmaple:
 # - `docker build --pull -t dfinity/boundaryos-main --build-arg BUILD_TYPE=dev --build-arg SW=true \ `
-#   `--build-arg BASE_IMAGE=dfinity/boundaryos-base@sha256:b2b385142bdc74e42cd5a05be1ae15c08f43b444ef2babd75adca7b0ba06d61d -f Dockerfile .`
+#   `--build-arg BASE_IMAGE=dfinity/boundaryos-base@sha256:7c08251abb8b4db1698e82d1ab36a84b9089b65432c8ac33386b1912eabc05da -f Dockerfile .`
 #
 #
 # The base images are defined in docker-base.prod and docker-base.dev. Update
@@ -217,8 +217,19 @@ RUN mkdir -p /var/www/html && chown www-data:www-data /var/www/html
 
 # Install other files (e.g. the uninstall-script)
 COPY var/www/html /var/www/html
-
 RUN chmod 0644 /var/www/html/*
+
+# Install cgi-scripts
+RUN mkdir -p /var/www/cgi-bin && \
+    chown www-data:www-data /var/www/cgi-bin
+COPY var/www/cgi-bin/* /var/www/cgi-bin/
+RUN mkdir -p /var/www/cgi-bin/artifacts && \
+    mkdir -p /var/www/cgi-bin/artifacts/certs && \
+    chown www-data:www-data /var/www/cgi-bin/artifacts && \
+    chown www-data:www-data /var/www/cgi-bin/artifacts/certs && \
+    touch /var/www/cgi-bin/cgi.log && \
+    chown www-data:www-data /var/www/cgi-bin/* && \
+    chmod 0755 /var/www/cgi-bin/*
 
 # Clear all files that may lead to indeterministic build.
 RUN apt-get clean && \
@@ -249,3 +260,7 @@ RUN chmod 0755 /etc/nginx/* && \
     rm -rf /etc/nginx/conf.d/default.conf && \
     rm -rf /etc/nginx/sites-enabled/default && \
     rm -rf /etc/nginx/conf.d/default
+
+# Configure incron
+COPY etc/incron.tb /etc/incron.d/incron.tb
+RUN echo root >> /etc/incron.allow
